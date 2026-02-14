@@ -17,12 +17,13 @@ const errorHandler = require('./middleware/errorHandler');
 const app = express();
 
 // MongoDB Connection
+const mongoURL = process.env.MONGODB_URI || 'mongodb://localhost:27017/blogapp';
 mongoose
-  .connect("mongodb+srv://narsijangid01:12345678nj@cluster0.x8tzdfv.mongodb.net/blogapp?retryWrites=true&w=majority&appName=Cluster0", {
+  .connect(mongoURL, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
-  .then(() => console.log('MongoDB connected'))
+  .then(() => console.log('MongoDB connected to:', mongoURL))
   .catch((err) => console.error('MongoDB connection error:', err));
 
 // Security Middleware
