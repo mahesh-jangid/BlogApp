@@ -16,8 +16,9 @@ const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
-// MongoDB Connection with improved error handling
-const mongoURL = process.env.MONGODB_URI || "mongodb+srv://narsijangid01:12345678nj@cluster0.x8tzdfv.mongodb.net/blogapp?retryWrites=true&w=majority&appName=Cluster0";
+// MongoDB Connection
+// const mongoURL = process.env.MONGODB_URI || 'mongodb://localhost:27017/blogapp';
+const mongoURL = process.env.MONGODB_URI || 'mongodb://localhost:27017/blogapp';
 
 // Connection options with timeout and retry settings
 const mongoOptions = {
