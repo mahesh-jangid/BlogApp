@@ -339,22 +339,25 @@ exports.incrementView = async (req, res, next) => {
       });
     }
 
-    // Get user ID if authenticated, otherwise use IP address or client fingerprint
-    const viewerId = req.user?.id || `guest-${req.ip}`;
+    // Only track views for authenticated users to maintain data integrity
+    // Guests are handled on the client-side using localStorage
+    if (req.user?.id) {
+      // Convert viewer IDs to strings for comparison
+      const viewerIdString = req.user.id.toString();
+      const hasViewed = blog.viewers.some(
+        (viewer) => viewer.toString() === viewerIdString
+      );
 
-    // Check if this user/guest has already viewed this blog
-    const hasViewed = blog.viewers.some(
-      (viewer) => viewer.toString() === viewerId
-    );
-
-    // If not viewed, add to viewers array and increment count
-    if (!hasViewed && req.user?.id) {
-      blog.viewers.push(req.user.id);
-      blog.viewCount = (blog.viewCount || 0) + 1;
-      await blog.save();
-    } else if (!hasViewed && !req.user?.id) {
-      // For guests, we'll allow one view per session/IP
-      blog.viewers.push(viewerId);
+      // If not already viewed, add to viewers array and increment count
+      if (!hasViewed) {
+        blog.viewers.push(req.user.id);
+        blog.viewCount = (blog.viewCount || 0) + 1;
+        await blog.save();
+      }
+    }
+    // For guests, the client tracks views in localStorage and sends a flag
+    // if isGuestFirstView flag is true, increment for first guest view
+    else if (req.body?.isGuestFirstView) {
       blog.viewCount = (blog.viewCount || 0) + 1;
       await blog.save();
     }
@@ -363,6 +366,7 @@ exports.incrementView = async (req, res, next) => {
       success: true,
       message: 'View recorded',
       viewCount: blog.viewCount,
+      isAuthenticated: !!req.user?.id,
     });
   } catch (error) {
     next(error);
