@@ -22,8 +22,6 @@ const mongoURL = process.env.MONGODB_URI || 'mongodb://localhost:27017/blogapp';
 
 // Connection options with timeout and retry settings
 const mongoOptions = {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
   retryWrites: true,
   serverSelectionTimeoutMS: 5000, // 5 second timeout for server selection
   socketTimeoutMS: 45000, // 45 second socket timeout
