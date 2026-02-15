@@ -16,6 +16,18 @@ const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
+// ⚠️ CRITICAL: Handle unhandled promise rejections BEFORE route setup
+// This prevents FUNCTION_INVOCATION_FAILED errors on Vercel
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  // Don't exit - let the error handler middleware deal with it on the request
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+  // Don't exit - log and continue
+});
+
 // MongoDB Connection
 // const mongoURL = process.env.MONGODB_URI || 'mongodb://localhost:27017/blogapp';
 const mongoURL = process.env.MONGODB_URI || 'mongodb://localhost:27017/blogapp';
