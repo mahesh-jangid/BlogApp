@@ -16,15 +16,44 @@ const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
-// MongoDB Connection
-const mongoURL = process.env.MONGODB_URI || 'mongodb://localhost:27017/blogapp';
-mongoose
-  .connect(mongoURL, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => console.log('MongoDB connected to:', mongoURL))
-  .catch((err) => console.error('MongoDB connection error:', err));
+// MongoDB Connection with improved error handling
+const mongoURL = process.env.MONGODB_URI || "mongodb+srv://narsijangid01:12345678nj@cluster0.x8tzdfv.mongodb.net/blogapp?retryWrites=true&w=majority&appName=Cluster0";
+
+// Connection options with timeout and retry settings
+const mongoOptions = {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  retryWrites: true,
+  serverSelectionTimeoutMS: 5000, // 5 second timeout for server selection
+  socketTimeoutMS: 45000, // 45 second socket timeout
+  connectTimeoutMS: 10000, // 10 second connection timeout
+  maxPoolSize: 10,
+  minPoolSize: 5,
+};
+
+// Connect to MongoDB with retry logic
+const connectDB = async () => {
+  try {
+    await mongoose.connect(mongoURL, mongoOptions);
+    console.log('✅ MongoDB connected successfully');
+    
+    // Log connection state
+    mongoose.connection.on('disconnected', () => {
+      console.warn('⚠️ MongoDB disconnected');
+    });
+    
+    mongoose.connection.on('error', (err) => {
+      console.error('❌ MongoDB connection error:', err.message);
+    });
+    
+  } catch (err) {
+    console.error('❌ MongoDB connection failed:', err.message);
+    console.log('🔄 Retrying connection in 5 seconds...');
+    setTimeout(connectDB, 5000);
+  }
+};
+
+connectDB();
 
 // Security Middleware
 app.use(helmet());
@@ -96,10 +125,24 @@ app.use((req, res) => {
 // Error Handling Middleware
 app.use(errorHandler);
 
+// Server startup
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+const server = app.listen(PORT, () => {
+  console.log(`✅ Server is running on port ${PORT}`);
+  console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🗄️ MongoDB: ${mongoURL.split('@')[0]}...`);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  server.close(() => {
+    mongoose.connection.close(false, () => {
+      console.log('MongoDB connection closed');
+      process.exit(0);
+    });
+  });
 });
 
 module.exports = app;
